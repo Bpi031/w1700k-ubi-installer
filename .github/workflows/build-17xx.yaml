@@ -9,7 +9,7 @@ env:
   TARGET_SUBTARGET: airoha/an7581
   INNER_CONFIG: configs/build.config
   OUTER_CONFIG: configs/minimal.config
-  # XR1710G
+
   DEVICE_NAME: xr1710g
   RECOVERY_FILE: openwrt-airoha-an7581-gemtek_xr1710g-ubi-initramfs-recovery.itb
   SYSUPGRADE_FILE: openwrt-airoha-an7581-gemtek_xr1710g-ubi-squashfs-sysupgrade.itb
@@ -55,14 +55,17 @@ jobs:
           cd openwrt
           cp "../installer-repo/${{ env.INNER_CONFIG }}" .config
           make defconfig
+          
           # ==== inject BBR  ====
           sed -i '/CONFIG_PACKAGE_kmod-tcp-bbr/d' .config
           echo "CONFIG_PACKAGE_kmod-tcp-bbr=y" >> .config
           echo "CONFIG_DEFAULT_net.core.default_qdisc=\"fq\"" >> .config
           echo "CONFIG_DEFAULT_net.ipv4.tcp_congestion_control=\"bbr\"" >> .config
+          
           make defconfig
-          # ============================================
-          make -j"$(nproc)" download world
+          # =================================
+          
+          make -j"$(nproc)" download world || make -j1 V=s world
 
       - name: Outer Build (Installer)
         run: |
