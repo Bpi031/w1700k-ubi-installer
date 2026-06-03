@@ -49,7 +49,15 @@ jobs:
                  -e 's#https://git.openwrt.org/project/#https://github.com/openwrt/#g' feeds.conf.default
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-
+          
+          # === fix conflit ===
+          TARGET_PATCH="target/linux/airoha/patches-6.18/611-net-airoha-Fix-possible-TX-queue-stall-in-airoha_qdma_tx_napi_poll.patch"
+          if [ -f "$TARGET_PATCH" ]; then
+            echo "found conflit, removing..."
+            mv "$TARGET_PATCH" "${TARGET_PATCH}.bak"
+          fi
+          # ============================================
+          
       - name: Inner Build
         run: |
           cd openwrt
