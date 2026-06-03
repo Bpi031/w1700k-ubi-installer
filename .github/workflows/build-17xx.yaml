@@ -63,6 +63,13 @@ jobs:
           cd openwrt
           cp "../installer-repo/${{ env.INNER_CONFIG }}" .config
           make defconfig
+          # ==== inject BBR ====
+          sed -i '/CONFIG_PACKAGE_kmod-tcp-bbr/d' .config
+          echo "CONFIG_PACKAGE_kmod-tcp-bbr=y" >> .config
+          echo "CONFIG_DEFAULT_net.core.default_qdisc=\"fq\"" >> .config
+          echo "CONFIG_DEFAULT_net.ipv4.tcp_congestion_control=\"bbr\"" >> .config
+          make defconfig
+          # =================================
           make -j"$(nproc)" download world
 
       - name: Outer Build (Installer)
