@@ -9,25 +9,17 @@ env:
   TARGET_SUBTARGET: airoha/an7581
   INNER_CONFIG: configs/build.config
   OUTER_CONFIG: configs/minimal.config
+  # XR1710G
+  DEVICE_NAME: xr1710g
+  RECOVERY_FILE: openwrt-airoha-an7581-gemtek_xr1710g-ubi-initramfs-recovery.itb
+  SYSUPGRADE_FILE: openwrt-airoha-an7581-gemtek_xr1710g-ubi-squashfs-sysupgrade.itb
+  INSTALLER_FILE: openwrt-airoha-an7581-gemtek_xr1710g-ubi-initramfs-installer.itb
+  UBOOT_FILE: openwrt-airoha-an7581-gemtek_xr1710g-ubi-chainload-uboot.itb
 
 jobs:
   build:
-    name: Build OpenWrt (${{ matrix.device }})
+    name: Build OpenWrt (xr1710g)
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - device: w1700k
-            recovery: openwrt-airoha-an7581-gemtek_w1700k-ubi-initramfs-recovery.itb
-            sysupgrade: openwrt-airoha-an7581-gemtek_w1700k-ubi-squashfs-sysupgrade.itb
-            installer: openwrt-airoha-an7581-gemtek_w1700k-ubi-initramfs-installer.itb
-            uboot: openwrt-airoha-an7581-gemtek_w1700k-ubi-chainload-uboot.itb
-          - device: xr1710g
-            recovery: openwrt-airoha-an7581-gemtek_xr1710g-ubi-initramfs-recovery.itb
-            sysupgrade: openwrt-airoha-an7581-gemtek_xr1710g-ubi-squashfs-sysupgrade.itb
-            installer: openwrt-airoha-an7581-gemtek_xr1710g-ubi-initramfs-installer.itb
-            uboot: openwrt-airoha-an7581-gemtek_xr1710g-ubi-chainload-uboot.itb
 
     steps:
       - name: Checkout installer repository
@@ -63,13 +55,13 @@ jobs:
           cd openwrt
           cp "../installer-repo/${{ env.INNER_CONFIG }}" .config
           make defconfig
-          # ==== inject BBR ====
+          # ==== inject BBR  ====
           sed -i '/CONFIG_PACKAGE_kmod-tcp-bbr/d' .config
           echo "CONFIG_PACKAGE_kmod-tcp-bbr=y" >> .config
           echo "CONFIG_DEFAULT_net.core.default_qdisc=\"fq\"" >> .config
           echo "CONFIG_DEFAULT_net.ipv4.tcp_congestion_control=\"bbr\"" >> .config
           make defconfig
-          # =================================
+          # ============================================
           make -j"$(nproc)" download world
 
       - name: Outer Build (Installer)
@@ -78,8 +70,8 @@ jobs:
           cp "../installer-repo/${{ env.OUTER_CONFIG }}" .config
           make defconfig
           mkdir -p files/installer
-          cp "bin/targets/${{ env.TARGET_SUBTARGET }}/${{ matrix.recovery }}" "files/installer/"
-          cp "bin/targets/${{ env.TARGET_SUBTARGET }}/${{ matrix.sysupgrade }}" "files/installer/"
+          cp "bin/targets/${{ env.TARGET_SUBTARGET }}/${{ env.RECOVERY_FILE }}" "files/installer/"
+          cp "bin/targets/${{ env.TARGET_SUBTARGET }}/${{ env.SYSUPGRADE_FILE }}" "files/installer/"
           rsync -a ../installer-repo/files/ files/
           chmod +x files/installer/install.sh files/lib/preinit/00_installer
           make -j"$(nproc)"
@@ -87,11 +79,11 @@ jobs:
       - name: Prepare and Rename Artifacts
         run: |
           mkdir -p output/
-          cp "openwrt/bin/targets/${{ env.TARGET_SUBTARGET }}/${{ matrix.recovery }}" "output/${{ matrix.installer }}"
-          cp "openwrt/bin/targets/${{ env.TARGET_SUBTARGET }}/${{ matrix.uboot }}" "output/${{ matrix.uboot }}"
+          cp "openwrt/bin/targets/${{ env.TARGET_SUBTARGET }}/${{ env.RECOVERY_FILE }}" "output/${{ env.INSTALLER_FILE }}"
+          cp "openwrt/bin/targets/${{ env.TARGET_SUBTARGET }}/${{ env.UBOOT_FILE }}" "output/${{ env.UBOOT_FILE }}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@main
         with:
-          name: ${{ matrix.device }}-installer
+          name: xr1710g-installer
           path: output/
